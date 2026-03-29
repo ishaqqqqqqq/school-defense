@@ -1,19 +1,56 @@
-<style>
-  body {
-    margin: 0;
-    background: #222;
-    color: #fff;
-    font-family: sans-serif;
-    text-align: center;
-  }
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Canvas Test</title>
+  <style>
+    body {
+      margin: 0;
+      background: #222;
+      color: #fff;
+      font-family: sans-serif;
+    }
 
-  canvas {
-    width: 900px !important;
-    height: 500px !important;
-    background: #000 !important;
-    display: block;
-    margin: 0 auto;
-  }
-</style>
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+    }
 
-<canvas id="game" width="900" height="500" style="border:3px solid red; background:#000 !important;"></canvas>
+    canvas {
+      width: 900px !important;
+      height: 500px !important;
+      background: #000 !important;
+      border: 3px solid red !important;
+      display: block;
+      margin: 80px auto 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="ui">
+    <div>Credits: 0</div>
+    <div>Gun: Pencil Shooter</div>
+    <div>Damage: 1</div>
+    <div>Fire Rate: 400 ms</div>
+    <div>Health: 3</div>
+  </div>
+
+  <canvas id="game" width="900" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Draw a blue square so we know the canvas works
+    function draw() {
+      ctx.fillStyle = "blue";
+      ctx.fillRect(100, 100, 100, 100);
+    }
+
+    draw();
+  </script>
+
+</body>
+</html>
