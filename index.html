@@ -45,16 +45,18 @@
     opacity: 0.7;
     font-size: 14px;
   }
+
+  #err {
+    white-space: pre;
+    color: red;
+    font-family: monospace;
+    padding: 10px;
+  }
 </style>
 </head>
 <body>
-  <div id="err" style="white-space:pre; color:red; font-family:monospace; padding:10px;"></div>
-<script>
-window.onerror = function(msg, src, line, col, err) {
-  document.getElementById("err").textContent += 
-    msg + " at " + line + ":" + col + "\n";
-};
-</script>
+
+<div id="err"></div>
 
 <div id="ui">
   Credits: <span id="credits">0</span><br>
@@ -64,9 +66,14 @@ window.onerror = function(msg, src, line, col, err) {
 <div id="crosshair"></div>
 <div id="info">Click to lock mouse. WASD to move. Left click to shoot.</div>
 
-<script type="module">
-  alert("JS is running!");
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  document.getElementById("err").textContent += 
+    msg + " at " + line + ":" + col + "\n";
+};
+</script>
 
+<script type="module">
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 import { PointerLockControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js";
 
@@ -92,167 +99,4 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-scene.add(ambient);
-
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(10, 20, 10);
-scene.add(light);
-
-const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
-  new THREE.MeshPhongMaterial({ color: 0x303030 })
-);
-floor.rotation.x = -Math.PI / 2;
-scene.add(floor);
-
-const wallMat = new THREE.MeshPhongMaterial({ color: 0x505050 });
-function wall(w, h, d, x, y, z) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
-  m.position.set(x, y, z);
-  scene.add(m);
-}
-
-wall(200, 20, 2, 0, 10, -50);
-wall(200, 20, 2, 0, 10, 50);
-wall(2, 20, 200, -50, 10, 0);
-wall(2, 20, 200, 50, 10, 0);
-
-const enemies = [];
-const enemyGeo = new THREE.BoxGeometry(3, 3, 3);
-const enemyMat = new THREE.MeshPhongMaterial({ color: 0xff4444 });
-
-function spawnEnemy(x, z) {
-  const mesh = new THREE.Mesh(enemyGeo, enemyMat.clone());
-  mesh.position.set(x, 1.5, z);
-  scene.add(mesh);
-  enemies.push({ mesh, hp: 3 });
-}
-
-for (let i = 0; i < 10; i++) {
-  spawnEnemy((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80);
-}
-
-const controls = new PointerLockControls(camera, document.body);
-camera.position.set(0, 2, 10);
-
-document.body.addEventListener("click", () => controls.lock());
-
-const move = { f: false, b: false, l: false, r: false };
-const vel = new THREE.Vector3();
-const dir = new THREE.Vector3();
-
-document.addEventListener("keydown", e => {
-  if (e.code === "KeyW") move.f = true;
-  if (e.code === "KeyS") move.b = true;
-  if (e.code === "KeyA") move.l = true;
-  if (e.code === "KeyD") move.r = true;
-});
-
-document.addEventListener("keyup", e => {
-  if (e.code === "KeyW") move.f = false;
-  if (e.code === "KeyS") move.b = false;
-  if (e.code === "KeyA") move.l = false;
-  if (e.code === "KeyD") move.r = false;
-});
-
-const gun = new THREE.Mesh(
-  new THREE.BoxGeometry(0.6, 0.3, 1.5),
-  new THREE.MeshPhongMaterial({ color: 0x222222 })
-);
-gun.position.set(0.5, -0.4, -1);
-camera.add(gun);
-scene.add(camera);
-
-const flash = new THREE.Mesh(
-  new THREE.SphereGeometry(0.08, 8, 8),
-  new THREE.MeshBasicMaterial({ color: 0xffaa00 })
-);
-flash.visible = false;
-flash.position.set(0.8, -0.35, -1.6);
-camera.add(flash);
-
-function recoil() {
-  gun.position.z += 0.08;
-  setTimeout(() => (gun.position.z -= 0.08), 60);
-}
-
-function muzzle() {
-  flash.visible = true;
-  setTimeout(() => (flash.visible = false), 40);
-}
-
-const ray = new THREE.Raycaster();
-let lastShot = 0;
-
-function shoot() {
-  const now = performance.now();
-  if (now - lastShot < 150) return;
-  lastShot = now;
-
-  recoil();
-  muzzle();
-
-  const d = new THREE.Vector3();
-  camera.getWorldDirection(d);
-  ray.set(camera.position.clone(), d);
-
-  const hit = ray.intersectObjects(enemies.map(e => e.mesh))[0];
-  if (!hit) return;
-
-  const enemy = enemies.find(e => e.mesh === hit.object);
-  enemy.hp--;
-
-  hit.object.material.color.set(0xffaaaa);
-  setTimeout(() => hit.object.material.color.set(0xff4444), 80);
-
-  if (enemy.hp <= 0) {
-    scene.remove(enemy.mesh);
-    enemies.splice(enemies.indexOf(enemy), 1);
-    credits += 10;
-    updateUI();
-  }
-}
-
-window.addEventListener("mousedown", e => {
-  if (controls.isLocked && e.button === 0) shoot();
-});
-
-window.addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
-
-let last = performance.now();
-
-function animate() {
-  requestAnimationFrame(animate);
-
-  const now = performance.now();
-  const dt = (now - last) / 1000;
-  last = now;
-
-  if (controls.isLocked) {
-    vel.x -= vel.x * 10 * dt;
-    vel.z -= vel.z * 10 * dt;
-
-    dir.z = Number(move.f) - Number(move.b);
-    dir.x = Number(move.r) - Number(move.l);
-    dir.normalize();
-
-    const speed = 20;
-    if (move.f || move.b) vel.z -= dir.z * speed * dt;
-    if (move.l || move.r) vel.x -= dir.x * speed * dt;
-
-    controls.moveRight(-vel.x * dt);
-    controls.moveForward(-vel.z * dt);
-  }
-
-  renderer.render(scene, camera);
-}
-
-animate();
-</script>
-</body>
-</html>
+const ambient = new THREE.Amb
